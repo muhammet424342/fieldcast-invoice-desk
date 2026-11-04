@@ -1,4 +1,7 @@
+import hmac
 import json
+import logging
+import sys
 import uuid
 from pathlib import Path
 
@@ -8,8 +11,26 @@ from werkzeug.utils import secure_filename
 from . import config, db, export, extract, rules
 
 
-def create_app(data_dir=None):
+def create_app(data_dir=None, auth_user=None, auth_pass=None):
     app = Flask(__name__)
+    user = config.BASIC_AUTH_USER if auth_user is None else auth_user
+    pw = config.BASIC_AUTH_PASS if auth_pass is None else auth_pass
+    if not (user and pw):
+        msg = ("WARNING: BASIC_AUTH_USER/BASIC_AUTH_PASS not set - the Invoice Desk UI is OPEN to anyone "
+               "who can reach this port. Set both in .env before exposing it.")
+        print(msg, file=sys.stderr, flush=True)
+        logging.getLogger("invoice_desk").warning(msg)
+
+    @app.before_request
+    def _basic_auth():
+        if not (user and pw) or request.path == "/health":
+            return None
+        a = request.authorization
+        if a and a.type == "basic" and hmac.compare_digest(a.username or "", user) \
+                and hmac.compare_digest(a.password or "", pw):
+            return None
+        return Response("Authentication required", 401, {"WWW-Authenticate": 'Basic realm="Invoice Desk"'})
+
     app.config["SECRET_KEY"] = config.SECRET_KEY
     app.config["MAX_CONTENT_LENGTH"] = int(config.MAX_UPLOAD_MB * 1024 * 1024)
     data = Path(data_dir or config.DATA_DIR)

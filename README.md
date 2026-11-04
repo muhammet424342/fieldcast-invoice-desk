@@ -20,7 +20,8 @@ It was built for the lablab.ai *Vultr: Agent Rush* hackathon (Challenge 2 – Fi
   - A reviewer can **approve**, **reject** (a reason is required) or **correct** fields. Correcting re-runs the checks.
   - Every action is written to the `audit` table with actor, note and UTC time.
 - **Web UI** (Flask + Jinja): multi-file upload, a list with status badges, a detail page (fields, checks, line items, audit log) with approve/reject/correct, and Excel (Invoices + Line items sheets) or JSON download (`?status=approved` filter).
-- **Health:** `GET /health`.
+- **Access control:** HTTP Basic Auth for every page and API route. The username and password come from `.env` (`BASIC_AUTH_USER`, `BASIC_AUTH_PASS`); `/health` stays open. If either is empty, the app prints a clear WARNING at startup and runs without auth (only for local testing).
+- **Health:** `GET /health` (no auth).
 
 ## Architecture
 ```
@@ -39,7 +40,7 @@ Browser ─► (port 80) gunicorn/Flask container on a Vultr Cloud Compute VM
 git clone <repo-url> fieldcast-invoice-desk && cd fieldcast-invoice-desk
 docker compose up -d --build        # → http://<server-ip>/
 ```
-An `.env` file is optional (`cp .env.example .env` to set LLM or thresholds). **Never commit `.env`.**
+Before exposing it, create `.env` and set a login: `cp .env.example .env`, then fill `BASIC_AUTH_USER` and a strong `BASIC_AUTH_PASS` (and optionally LLM/thresholds). **Never commit `.env`.**
 
 **Without Docker (Ubuntu, as root):** `./install.sh` installs the Python venv, Tesseract, a systemd service and an nginx proxy.
 
@@ -47,7 +48,7 @@ An `.env` file is optional (`cp .env.example .env` to set LLM or thresholds). **
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m invoice_desk.app      # http://127.0.0.1:8010
-.venv/bin/python -m pytest -q             # 12 tests
+.venv/bin/python -m pytest -q             # 15 tests
 ```
 
 ## Sample invoices (`samples/`)
@@ -58,7 +59,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 ## Known limits
 - The rule-based parser targets common English invoice layouts ("Invoice Number", "Sub Total", "Tax", "Total", one line per item). Other layouts may give `null` fields, which then show up as failed checks. That is safe, but it means more manual review. The LLM option improves this.
 - OCR has only been exercised for import; no scanned invoice has been tested end-to-end yet.
-- No login or user accounts. The reviewer name is free text, so put the demo behind a private URL or add auth before real use.
+- One shared Basic Auth login, no per-user accounts or roles; the reviewer name is free text. Basic Auth over plain HTTP sends the password unencrypted — use HTTPS (not included) for anything beyond a demo.
 - Single-currency checks; no tax-rate validation or bank/ERP reconciliation.
 - Tested on the 3 sample PDFs above only; not tested with real customer documents.
 

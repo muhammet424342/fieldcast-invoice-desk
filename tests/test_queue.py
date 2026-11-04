@@ -54,7 +54,7 @@ def test_duplicate_number_via_db(c):
 
 
 def test_web_end_to_end(tmp_path):
-    app = create_app(tmp_path)
+    app = create_app(tmp_path, "", "")
     cl = app.test_client()
     for name in ["sliced-invoice-INV-3337.pdf", "acme-invoice-1002-bad-total.pdf"]:
         r = cl.post("/upload", data={"files": (open(SAMPLES / name, "rb"), name)}, content_type="multipart/form-data")
