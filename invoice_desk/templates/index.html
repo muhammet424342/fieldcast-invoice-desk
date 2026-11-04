@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block body %}
+<div class="card"><h3 style="margin-top:0">Upload invoices (PDF)</h3>
+<form action="/upload" method="post" enctype="multipart/form-data"><input type="file" name="files" accept="application/pdf" multiple required> <button>Upload &amp; check</button></form></div>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
+<h3 style="margin:0">Invoices</h3>
+<div><span class="badge approved">approved {{counts.approved}}</span> <span class="badge in_review">in review {{counts.in_review}}</span> <span class="badge rejected">rejected {{counts.rejected}}</span>
+&nbsp;<a class="btn" href="/export.xlsx">Excel</a> <a class="btn" href="/export.json">JSON</a></div></div>
+<table><tr><th>#</th><th>File</th><th>Invoice no</th><th>Seller</th><th>Total</th><th>Failed checks</th><th>Status</th></tr>
+{% for i in invoices %}<tr><td><a href="/invoice/{{i.id}}">{{i.id}}</a></td><td><a href="/invoice/{{i.id}}">{{i.filename}}</a></td><td>{{i.fields.invoice_number or '—'}}</td>
+<td>{{i.fields.seller or '—'}}</td><td>{{i.fields.total if i.fields.total is not none else '—'}} {{i.fields.currency or ''}}</td>
+<td class="fail">{{ i.checks|rejectattr('passed')|map(attribute='rule')|join(', ') }}</td><td><span class="badge {{i.status}}">{{i.status|replace('_',' ')}}</span></td></tr>
+{% else %}<tr><td colspan="7" class="muted">No invoices yet.</td></tr>{% endfor %}</table></div>{% endblock %}

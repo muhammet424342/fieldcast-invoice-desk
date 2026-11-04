@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block body %}
+<p><a href="/">← all invoices</a></p>
+<div class="card"><h2 style="margin-top:0">{{inv.filename}} <span class="badge {{inv.status}}">{{inv.status|replace('_',' ')}}</span></h2>
+<p class="muted">Engine: {{inv.engine}} · created {{inv.created_at}}</p>
+{% if inv.status == 'in_review' %}
+<form method="post" action="/invoice/{{inv.id}}/decide" style="display:flex;gap:8px;flex-wrap:wrap">
+<input name="actor" placeholder="your name"><input name="note" placeholder="note (required to reject)" size="40">
+<button class="green" name="action" value="approve">Approve</button><button class="red" name="action" value="reject">Reject</button></form>{% endif %}</div>
+<div class="card"><h3 style="margin-top:0">Checks</h3><table>{% for c in inv.checks %}
+<tr><td class="{{'ok' if c.passed else 'fail'}}">{{'✔' if c.passed else '✘'}} {{c.rule}}</td><td>{{c.message}}</td></tr>{% endfor %}</table></div>
+<div class="card"><h3 style="margin-top:0">Extracted fields (edit to correct — checks re-run on save)</h3>
+<form method="post" action="/invoice/{{inv.id}}/correct"><table>
+{% for k in ['invoice_number','invoice_date','seller','buyer','currency','subtotal','tax','total'] %}
+<tr><th>{{k}}</th><td><input name="{{k}}" value="{{inv.fields[k] if inv.fields[k] is not none else ''}}" size="40"></td></tr>{% endfor %}</table>
+<p><input name="actor" placeholder="your name"> <input name="note" placeholder="what did you fix?" size="40"> <button>Save correction</button></p></form>
+<h4>Line items</h4><table><tr><th>Qty</th><th>Description</th><th>Unit price</th><th>Amount</th></tr>
+{% for it in inv.fields.line_items or [] %}<tr><td>{{it.qty}}</td><td>{{it.description}}</td><td>{{it.unit_price}}</td><td>{{it.amount}}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">none found</td></tr>{% endfor %}</table></div>
+<div class="card"><h3 style="margin-top:0">Audit log</h3><table><tr><th>When (UTC)</th><th>Action</th><th>By</th><th>Note</th></tr>
+{% for a in audit %}<tr><td>{{a.at}}</td><td>{{a.action}}</td><td>{{a.actor}}</td><td>{{a.note}}</td></tr>{% endfor %}</table></div>{% endblock %}

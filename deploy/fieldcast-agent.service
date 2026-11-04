@@ -1,0 +1,10 @@
+[Unit]
+Description=Fieldcast Invoice Desk
+After=network-online.target
+[Service]
+WorkingDirectory=/opt/fieldcast-invoice-desk
+Environment=DATA_DIR=/opt/fieldcast-invoice-desk/data
+ExecStart=/opt/fieldcast-invoice-desk/.venv/bin/gunicorn -w 2 -b 127.0.0.1:8010 invoice_desk.app:app
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
